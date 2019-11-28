@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SetCloudWatchLogGroupExpiry
+
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: Set-CloudWatch-LogGroup-Expiry
+    Description: set expiry to any newly created loggroup within your AWS Account.
+    Author: LeanTaaS Inc
+    SpdxLicenseId: MIT
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
+    Labels: ['lambda', 'sam', 'devops-made-easy', 'cloudwatch'] 
+    HomePageUrl: https://github.com/devops-made-easy/SetCloudWatchLogGroupExpiry
+    SemanticVersion: 0.0.1
+    SourceCodeUrl: https://github.com/devops-made-easy/SetCloudWatchLogGroupExpiry
+
+Parameters:
+  RetentionDays:
+    Default: 365
+    Type: Number
+    Description: Number of days that you want set for log group retention?
+
+Resources:
+  SetCloudWatchLogGroupExpiry:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: SetCloudWatchLogGroupExpiry
+      CodeUri: SetCloudWatchLogGroupExpiry/
+      Handler: main.lambda_handler
+      Runtime: python3.6
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          RETENTION_DAYS: 
+            Ref: RetentionDays
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+          - Effect: "Allow"
+            Action:
+              - "logs:PutRetentionPolicy"
+            Resource:
+              !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:loggroup:*'
+      Events:
+        CloudWatchLogGroupEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              detail-type:
+                - AWS API Call via CloudTrail
+              source:
+                - aws.logs
+              detail:
+                eventSource:
+                  - logs.amazonaws.com
+                eventName:
+                  - CreateLogGroup
+  
+
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  SetCloudWatchLogGroupExpiry:
+    Description: "SetCloudWatchLogGroupExpiry Lambda Function ARN"
+    Value: !GetAtt SetCloudWatchLogGroupExpiry.Arn
+
